@@ -12,6 +12,8 @@ You can just download a binary file for your system (the client system) [here](h
 
 You can run it with an interpreter. E.g. `python micrords_ssh.py` (not recommended)
 
-You can also compile the code with `pyinstaller`. You will need the `pyinstaller` package along with `paramiko` library.
+You can also compile the code with `pyinstaller`. You will need the `pyinstaller` package along with `paramiko` library. Then you can just run `pyinstaller --onefile --icon NONE micrords_ssh.py`. The exe will be in the `dist` folder.
 
-Then you can just run `pyinstaller --onefile --icon NONE micrords_ssh.py`. The exe will be in the `dist` folder.
+### Customization
+
+To change the IP/hostname, port, username or password, see `config.conf`.
