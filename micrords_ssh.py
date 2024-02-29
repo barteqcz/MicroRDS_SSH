@@ -8,7 +8,7 @@ def connect_to_ssh(address, username, password, port):
     ssh_client.set_missing_host_key_policy(AutoAddPolicy())
     
     try:
-        ssh_client.connect(address=address, port=port, username=username, password=password)
+        ssh_client.connect(hostname=address, port=port, username=username, password=password)
         print("Successfully connected to the SSH server")
         return ssh_client
 
