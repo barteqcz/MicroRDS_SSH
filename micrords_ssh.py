@@ -1,6 +1,7 @@
+import os
+import sys
 from paramiko import AutoAddPolicy, SSHClient
 from configparser import ConfigParser
-import os
 import time
 
 def connect_to_ssh(address, username, password, port):
@@ -33,17 +34,22 @@ def write_to_fifo(ssh_client, fifo_path, data):
 def send_commands_from_file(ssh_client, fifo_path, local_file_path):
     try:
         prev_mod_time = os.path.getmtime(local_file_path)
+        prev_content = ""
         
         while True:
             curr_mod_time = os.path.getmtime(local_file_path)
             
-            if curr_mod_time != prev_mod_time:
+            if curr_mod_time > prev_mod_time:
                 prev_mod_time = curr_mod_time
                 with open(local_file_path, 'r') as file:
-                    for line in file:
-                        command = line.strip()
-                        if command:
-                            write_to_fifo(ssh_client, fifo_path, command)
+                    new_content = file.read()
+                    if new_content != prev_content:
+                        prev_content = new_content
+                        lines = new_content.split("\n")
+                        for line in lines:
+                            line = line.strip()
+                            if line:
+                                write_to_fifo(ssh_client, fifo_path, line)
             time.sleep(1)
 
     except KeyboardInterrupt:
@@ -56,8 +62,12 @@ def send_commands_from_file(ssh_client, fifo_path, local_file_path):
         print(f"Error reading or sending commands: {e}")
 
 if __name__ == "__main__":
+    # Getting the directory of the executable file
+    exe_dir = os.path.dirname(sys.executable)
+    config_path = os.path.join(exe_dir, 'config.conf')
+
     config = ConfigParser()
-    config.read('config.conf')
+    config.read(config_path)
 
     ssh_config = config['SSH']
     settings = config['Settings']
@@ -76,4 +86,9 @@ if __name__ == "__main__":
     if ssh_client:
         run_command(ssh_client, f'screen -dmS MicroRDS bash -c "cd {encoder_path} && ./micrords --ctl {fifo_path}"')
         print(f"Reading commands from {source_path}")
+        with open(source_path, 'r') as file:
+            for line in file:
+                command = line.strip()
+                if command:
+                    write_to_fifo(ssh_client, fifo_path, command)
         send_commands_from_file(ssh_client, fifo_path, source_path)
