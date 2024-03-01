@@ -2,11 +2,11 @@
 
 This is a script in Python that connects to a remote SSH server, runs MicroRDS and controls it with a text file from the SSH client.
 
-### Perquisites
+## Perquisites
 
 In order to run the soft, you will need `screen` package.
 
-### Installation
+## Installation
 
 #### Binaries
 
@@ -18,6 +18,6 @@ You can run it with an interpreter. E.g. `python micrords_ssh.py` (not recommend
 
 You can also compile the code with `pyinstaller`. You will need the `pyinstaller` package along with `paramiko` library. Then you can just run `pyinstaller --onefile --icon NONE micrords_ssh.py`. The exe will be in the `dist` folder.
 
-### Customization
+## Customization
 
 To change the IP/hostname, port, username or password, see `config.conf`.
