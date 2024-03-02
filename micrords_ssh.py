@@ -9,13 +9,15 @@ def sshConnection(address, username, password, port):
     ssh_client.set_missing_host_key_policy(AutoAddPolicy())
     
     try:
+        print("Connecting to the SSH server...\n")
         ssh_client.connect(hostname=address, port=port, username=username, password=password)
         print("Successfully connected to the SSH server")
         return ssh_client
 
     except Exception as e:
-        print(f"Error: Connection to the SSH server failed: {e}")
-        return None
+        print(f"Error: Connection to the SSH server failed: {e}\n")
+        input("Press any key to exit...")
+        exit()
 
 def commandRunning(ssh_client, command):
     stdin, stdout, stderr = ssh_client.exec_command(command)
@@ -23,7 +25,7 @@ def commandRunning(ssh_client, command):
     print(stderr.read().decode())
 
 def closeAll():
-    print("Closing the screen session and connection...")
+    print("Stopping the encoder and closing the connection...")
     commandRunning(ssh_client, 'screen -S MicroRDS -X quit')
     ssh_client.close()
     exit()
@@ -35,7 +37,9 @@ def fifoWriting(ssh_client, fifo_path, data):
         channel.shutdown_write()
 
     except Exception as e:
-        print(f"Error: Writing to FIFO file not possible: {e}")
+        print(f"Error: Writing to FIFO file not possible: {e}\n")
+        input("Press any key to exit...")
+        closeAll()
 
 def fileCommands(ssh_client, fifo_path, source_path):
     try:
@@ -59,12 +63,22 @@ def fileCommands(ssh_client, fifo_path, source_path):
             sleep(0.1)
 
     except FileNotFoundError:
-        print(f"Error: File '{source_path}' not found.")
+        print(f"Error: File '{source_path}' not found.\n")
+        input("Press any key to exit...")
         closeAll()
 
     except Exception as e:
-        print(f"Error: Reading or sending commands not possible: {e}")
+        print(f"Error: Reading or sending commands not possible: {e}\n")
+        input("Press any key to exit...")
         closeAll()
+
+def checkRemotePathExists(ssh_client, path):
+    stdin, stdout, stderr = ssh_client.exec_command(f'[ -e "{path}" ] && echo "Exists" || echo "Does not exist"')
+    result = stdout.read().decode().strip()
+    if result == "Exists":
+        return True
+    else:
+        return False
 
 if __name__ == "__main__":
     try:
@@ -73,7 +87,7 @@ if __name__ == "__main__":
         configExists = os.path.exists(configPath)
 
         if not configExists:
-            print("Config file not detected. Generating...")
+            print("Generating config file...")
             with open(configPath, 'a') as file:
                 file.write(r"""[SSH]
 # The address of the SSH server. It can be either IP, or hostname of the server.
@@ -97,7 +111,8 @@ source_path = C:\Users\username\Documents\rds.txt
 
 # This is the remote FIFO file that is used with MicroRDS.
 fifo_path = /home/username/MicroRDS/scripts/rds_fifo""")
-            print("Config file generated, adjust it to your needs and re-run the program.")
+            print("Config file generated, adjust it to your needs and re-run the program.\n")
+            input("Press any key to exit...")
             exit()
 
         try:
@@ -117,12 +132,23 @@ fifo_path = /home/username/MicroRDS/scripts/rds_fifo""")
             source_path = settings.get('source_path')
 
         except KeyError:
-            print("Error: Syntax errors found in the config file.")
+            print("Error: Syntax errors found in the config file.\n")
+            input("Press any key to exit...")
             exit()
 
         ssh_client = sshConnection(address, username, password, port)
 
         if ssh_client:
+            if not checkRemotePathExists(ssh_client, encoder_path):
+                print("Error: Given encoder path doesn't exist on the SSH server.\n")
+                input("Press any key to exit...")
+                closeAll()
+
+            if not checkRemotePathExists(ssh_client, fifo_path):
+                print("Error: Given FIFO path doesn't exist on the SSH server.\n")
+                input("Press any key to exit...")
+                closeAll()
+
             commandRunning(ssh_client, f'screen -dmS MicroRDS bash -c "cd {encoder_path} && ./micrords --ctl {fifo_path}"')
             try:
                 print(f"Reading commands from {source_path}")
@@ -133,8 +159,10 @@ fifo_path = /home/username/MicroRDS/scripts/rds_fifo""")
                             fifoWriting(ssh_client, fifo_path, command)
 
             except FileNotFoundError:
-                print(f"Error: File '{source_path}' not found.")
+                print(f"Error: File '{source_path}' not found.\n")
+                input("Press any key to exit...")
                 closeAll()
+
             fileCommands(ssh_client, fifo_path, source_path)
 
     except KeyboardInterrupt:
