@@ -4,13 +4,13 @@ from paramiko import AutoAddPolicy, SSHClient
 from configparser import ConfigParser
 from time import sleep
 
-def sshConnection(address, username, password, port):
+def sshConnection(hostname, username, password, port):
     ssh_client = SSHClient()
     ssh_client.set_missing_host_key_policy(AutoAddPolicy())
     
     try:
         print("Connecting to the SSH server...\n")
-        ssh_client.connect(hostname=address, port=port, username=username, password=password)
+        ssh_client.connect(hostname=hostname, port=port, username=username, password=password)
         print("Successfully connected to the SSH server")
         return ssh_client
 
@@ -90,8 +90,8 @@ if __name__ == "__main__":
             print("Generating config file...")
             with open(configPath, 'a') as file:
                 file.write(r"""[SSH]
-# The address of the SSH server. It can be either IP, or hostname of the server.
-address = 192.168.0.10
+# The hostname of the SSH server. It can be either IP, or hostname of the server.
+hostname = 192.168.0.10
 
 # The port that SSH server is running on.
 port = 22
@@ -122,7 +122,7 @@ fifo_path = /home/username/MicroRDS/scripts/rds_fifo""")
             ssh_config = config['SSH']
             settings = config['Settings']
 
-            address = ssh_config.get('address')
+            hostname = ssh_config.get('hostname')
             port = ssh_config.getint('port')
             username = ssh_config.get('username')
             password = ssh_config.get('password')
@@ -136,7 +136,7 @@ fifo_path = /home/username/MicroRDS/scripts/rds_fifo""")
             input("Press any key to exit...")
             exit()
 
-        ssh_client = sshConnection(address, username, password, port)
+        ssh_client = sshConnection(hostname, username, password, port)
 
         if ssh_client:
             if not checkRemotePathExists(ssh_client, encoder_path):
