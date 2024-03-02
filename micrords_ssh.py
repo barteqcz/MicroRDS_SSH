@@ -11,7 +11,7 @@ def sshConnection(hostname, username, password, port):
     try:
         print("Connecting to the SSH server...\n")
         ssh_client.connect(hostname=hostname, port=port, username=username, password=password)
-        print("Successfully connected to the SSH server")
+        print(f"Successfully connected to {hostname}:{port}")
         return ssh_client
 
     except Exception as e:
@@ -90,7 +90,7 @@ if __name__ == "__main__":
             print("Generating config file...")
             with open(configPath, 'a') as file:
                 file.write(r"""[SSH]
-# The hostname of the SSH server. It can be either IP, or hostname of the server.
+# The hostname of the SSH server. It should be its IP address.
 hostname = 192.168.0.10
 
 # The port that SSH server is running on.
